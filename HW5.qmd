@@ -23,8 +23,20 @@ setValidity("waldCI", function(object) {
   if (object@confidence_level > 1) {
     stop("confidence_level too high")
   }
-  if (object@confidence_level < 0) {
+  if ( length(object@confidence_level) == 1 && object@confidence_level < 0) {
     stop("confidence_level too high")
+  }
+  if (length(object@sterr) == 1 && object@sterr < 0) {
+    stop ("can't have a negative sterr")
+  }
+  if (length(object@lb) == 1 && length(object@ub) == 1 && object@lb > object@ub) {
+    stop("can't have lb greater than ub")
+  }
+  if (length(object@lb) == 1 && length(object@ub) == 1 && object@lb == Inf) {
+    stop("can't have infinite lb")
+  }
+  if (length(object@lb) == 1 && length(object@ub) == 1 && object@ub == Inf) {
+    stop("can't have infinite ub")
   }
   has_mean <- length(object@mean) == 1
   has_sterr <- length(object@sterr) == 1
@@ -34,11 +46,13 @@ setValidity("waldCI", function(object) {
   option_1 <- has_mean & has_sterr
   option_2 <- has_lb & has_ub
   
+  
   if (option_1 | option_2) {
     return(TRUE)
   } else {
     stop("needs mean and sterr or lb and ub")
   }
+  
 })
 
 setMethod("show", "waldCI",
@@ -51,12 +65,105 @@ setMethod("show", "waldCI",
   }
 )
 
+#confidence level
 setGeneric("confidence_level",
            function(x) {
              standardGeneric("confidence_level")
            })
 
-setMethod("confidence_level", "confidence_level", function(x) x@confidence_level)
+setMethod("confidence_level", "waldCI", function(x) {
+  x@confidence_level
+})
+
+setGeneric("confidence_level<-", function(x, value) {
+  standardGeneric("confidence_level<-")
+})
+
+setMethod("confidence_level<-", "waldCI", function(x, value) {
+  x@confidence_level <- value
+  validObject(x)
+  return(x)
+})
+
+#lb
+setGeneric("lb",
+           function(x) {
+             standardGeneric("lb")
+           })
+
+setMethod("lb", "waldCI", function(x) {
+  x@lb
+})
+
+setGeneric("lb<-", function(x, value) {
+  standardGeneric("lb<-")
+})
+
+setMethod("lb<-", "waldCI", function(x, value) {
+  x@lb <- value
+  validObject(x)
+  return(x)
+})
+
+#ub
+setGeneric("ub",
+           function(x) {
+             standardGeneric("ub")
+           })
+
+setMethod("ub", "waldCI", function(x) {
+  x@ub
+})
+
+setGeneric("ub<-", function(x, value) {
+  standardGeneric("ub<-")
+})
+
+setMethod("ub<-", "waldCI", function(x, value) {
+  x@ub <- value
+  validObject(x)
+  return(x)
+})
+
+#mean
+setGeneric("mean",
+           function(x) {
+             standardGeneric("mean")
+           })
+
+setMethod("mean", "waldCI", function(x) {
+  x@mean
+})
+
+setGeneric("mean<-", function(x, value) {
+  standardGeneric("mean<-")
+})
+
+setMethod("mean<-", "waldCI", function(x, value) {
+  x@mean <- value
+  validObject(x)
+  return(x)
+})
+
+#sterr
+setGeneric("sterr",
+           function(x) {
+             standardGeneric("sterr")
+           })
+
+setMethod("sterr", "waldCI", function(x) {
+  x@sterr
+})
+
+setGeneric("sterr<-", function(x, value) {
+  standardGeneric("sterr<-")
+})
+
+setMethod("sterr<-", "waldCI", function(x, value) {
+  x@sterr <- value
+  validObject(x)
+  return(x)
+})
 
 setGeneric("contains",
            function(object, value) {
@@ -144,12 +251,55 @@ setMethod("as.numeric",
     return(c(x@lb, x@ub))
 })
 
-# TODO: transform CI
+
+setGeneric("transformCI", function(object, fn) {
+  standardGeneric("transformCI")
+})
+
+setMethod("transformCI",
+          signature = c(object = "waldCI"),
+  function(object, fn) {
+    return(fn(object))
+})
 
 ```
 
 
+b) 
 
+```{r}
 
+ci1 <- new("waldCI", confidence_level = .95, lb = 17.2, ub = 24.7)
+ci2 <- new("waldCI", confidence_level = .99, mean = 13, sterr = 2.5)
+ci3 <- new("waldCI", confidence_level = .75, lb = 27.43, ub = 39.22)
+
+ci1
+ci2
+ci3
+as.numeric(ci1)
+as.numeric(ci2)
+as.numeric(ci3)
+lb(ci2)
+ub(ci2)
+mean(ci1)
+sterr(ci3)
+# TODO: level(ci2)
+lb(ci2) <- 10.5
+mean(ci3) <- 34
+# TODO: level(ci3) <- .8
+contains(ci1, 17)
+contains(ci3, 44)
+overlap(ci1, ci2)
+# TODO: eci1 <- transformCI(ci1, sqrt)
+# TODO: eci1
+# TODO: mean(transformCI(ci2, log))
+```
+c)
+
+```{r}
+x <- new("waldCI", confidence_level = 0.9, mean = 2, sterr = -2)
+x <- new("waldCI", confidence_level = 0.9, lb = 2, ub = 1)
+x <- new("waldCI", confidence_level = 0.9, lb = 2, ub = Inf)
+```
 
 
