@@ -393,5 +393,124 @@ print(head(tennis_win_lose_count, 5))
 
 ## Exercise 3
 
+a)
+
+```{r}
+data <- read_csv("us-states.csv")
+
+g <- data %>% group_by(date) %>%
+  summarise(total_cases = sum(cases, na.rm = TRUE)) %>%
+  ggplot(aes(x = date, y = total_cases)) +
+  geom_line(color = "steelblue", linewidth = 1) +
+  labs(
+    title = "Daily Cases Starting in 2020.",
+    x = "Date",
+    y = "Number of Cases"
+    ) +
+  theme_minimal()
+
+ggplotly(g)
+
+print("We see 4 minor spikes and 1 major spike.")
+
+```
 
 
+
+b)
+
+```{r}
+data <- read_csv("us-states.csv")
+
+state_rates <- aggregate(
+  cases_avg_per_100k ~ state,
+  data = data,
+  na.rm = TRUE,
+  FUN = sum
+)
+
+extremes <- state_rates$state[
+  state_rates$cases_avg_per_100k %in%
+    range(state_rates$cases_avg_per_100k)
+]
+
+trajectory <- data[data$state %in%
+                     extremes, ]
+trajectory <- trajectory[order(trajectory$date), ]
+
+data$date <- as.Date(data$date)
+
+g <- data[data$state %in%
+       extremes, ] |>
+  ggplot(aes(x = date,
+             y = cases_avg_per_100k,
+             color = state)) +
+  geom_line() +
+  labs(
+    title = paste("Daily case rates: ",
+                  paste(extremes, collapse = ", ")),
+    x = "Date",
+    y = "Cases per 100,000",
+    color = "State"
+  ) +
+  theme_minimal()
+
+ggplotly(g)
+
+```
+
+c)
+
+```{r}
+
+data <- read_csv("us-states.csv",
+                 show_col_types = FALSE) %>%
+  mutate(date = as.Date(date))
+
+first_substantial <- data %>%
+  filter(cases_avg_per_100k >= 1) %>%
+  group_by(state) %>%
+  filter(!(state  %in%
+             c("Guam", "District of Columbia"))) %>%
+  slice_min(date,
+            n = 1,
+            with_ties = FALSE) %>%
+  ungroup() %>%
+  arrange(date) %>%
+  slice_head(n = 5)
+
+first_substantial %>%
+  select(state,
+         date,
+         cases_avg_per_100k)
+
+top_5_states <- first_substantial %>%
+  pull(state)
+
+g <- data %>%
+  filter(state %in%
+           top_5_states,
+         date >= as.Date("2020-01-01"),
+         date <= as.Date("2020-3-31")) %>%
+  group_by(state, date) %>%
+  summarise(total_cases = sum(cases,
+                              na.rm = TRUE),
+            .groups = "drop") %>%
+  ggplot(aes(x = date,
+             y = total_cases,
+             color = state,
+             group = state)) +
+  geom_line(linewidth = 1) +
+  labs(
+    title = "Daily Cases Starting in 2020",
+    x = "Date",
+    y = "Number of Cases",
+    color = "State"
+  ) +
+  theme_minimal()
+
+library(ggplot2)
+library(plotly)
+
+ggplotly(g)
+```
