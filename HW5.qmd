@@ -5,9 +5,23 @@ format: html
 editor: visual
 ---
 
+This is the github repository: https://github.com/leonestv-byte/506_hw5
+
 ## Exercise 1
 
-### a) 
+```{r}
+library(dplyr)
+library(tidyverse)
+library(DBI)
+library(knitr)
+library(tidyr)
+library(readr)
+library(ggplot2)
+library(plotly)
+```
+
+
+### a)
 
 ```{r}
 
@@ -264,8 +278,7 @@ setMethod("transformCI",
 
 ```
 
-
-b) 
+b)  
 
 ```{r}
 
@@ -294,17 +307,57 @@ overlap(ci1, ci2)
 # TODO: eci1
 # TODO: mean(transformCI(ci2, log))
 ```
-c)
+
+c)  
 
 ```{r}
-x <- new("waldCI", confidence_level = 0.9, mean = 2, sterr = -2)
-x <- new("waldCI", confidence_level = 0.9, lb = 2, ub = 1)
-x <- new("waldCI", confidence_level = 0.9, lb = 2, ub = Inf)
+
+result <- tryCatch(
+  expr = {
+    x <- new("waldCI", confidence_level = 0.9, mean = 2, sterr = -2)
+  },
+  error = function(e) {
+    print(e)
+    print("Validated an error occurred for negative standard error.")
+  }
+)
+
+result <- tryCatch(
+  expr = {
+    x <- new("waldCI", confidence_level = 0.9, lb = 2, ub = 1)
+  },
+  error = function(e) {
+    print(e)
+    print("Validated an error occurred for lb > ub.")
+  }
+)
+
+result <- tryCatch(
+  expr = {
+    x <- new("waldCI", confidence_level = 0.9, lb = 2, ub = Inf)
+  },
+  error = function(e) {
+    print(e)
+    print("Validated an error occurred for Infinite bounds.")
+  }
+)
+
+result <- tryCatch(
+  expr = {
+    x <- new("waldCI", confidence_level = 0.9, lb = 2, ub = 3)
+    ub(x) <- 1
+  },
+  error = function(e) {
+    print(e)
+    print("Validated an error occurred for invalid setter.")
+  }
+)
+
 ```
 
 ## Exercise 2
 
-a)
+a)  
 
 ```{r}
 library(data.table)
@@ -312,19 +365,25 @@ library(data.table)
 data_tennis_matches <- fread(
   "tennis-atp-sackmann-data/atp_matches_2019.csv")
 
+print(class(data_tennis_matches))
+
+# We see that it is a data.table type
+
 print(paste("The 2019 number of tournaments was",
             length(unique(data_tennis_matches$tourney_id))))
 ```
 
-
-b)
+b)  
 
 ```{r}
 data_tennis_matches <- fread("tennis-atp-sackmann-data/atp_matches_2019.csv")
+
 data_tennis_matches_final <- data_tennis_matches[round == "F"]
 
 print(length(unique(na.omit(data_tennis_matches_final$winner_name))))
 print(length(na.omit(data_tennis_matches_final$winner_name)))
+
+print("There are 41 winners and 67 matches, so yes")
 
 winners <- data_tennis_matches_final[, .N, by = winner_name]
 setnames(winners, "N", "count")
@@ -341,28 +400,27 @@ print(paste("The player with the most wins is", max_winner))
 print(paste("He has", max_winners))
 ```
 
-
-
-c)
+c)  
 
 ```{r}
 
 data_tennis_matches <- fread("tennis-atp-sackmann-data/atp_matches_2019.csv")
 
+# Ran into Error: unable to find an inherited method for function ‘mean’ for signature ‘x = "integer"’
+# Resorted to calling base.
 data_tennis_summarized <- data_tennis_matches[!is.na(w_ace) & !is.na(l_ace), .(
-  mean_winner_aces = mean(w_ace),
-  mean_loser_aces = mean(l_ace),
-  mean_difference = mean(w_ace - l_ace)
+  mean_winner_aces = base::mean(w_ace),
+  mean_loser_aces = base::mean(l_ace),
+  mean_difference = base::mean(w_ace - l_ace)
 )]
+
 
 print(data_tennis_summarized)
     
 
 ```
 
-
-
-d)
+d)  
 
 ```{r}
 data_tennis_matches <- fread("tennis-atp-sackmann-data/atp_matches_2019.csv")
@@ -378,22 +436,14 @@ tennis_win_lose_count <- merge(
   all = TRUE
 )
 
-tennis_win_lose_count <- tennis_win_lose_count[
-  wins + losses >= 5
-][
-  , ratio := wins / (wins + losses)
-][
-  order(-ratio)
-]
+tennis_win_lose_count <- tennis_win_lose_count[wins + losses >= 5][, ratio := wins / (wins + losses)][order(-ratio)]
 
 print(head(tennis_win_lose_count, 5))
 ```
 
-
-
 ## Exercise 3
 
-a)
+a)  
 
 ```{r}
 data <- read_csv("us-states.csv")
@@ -415,9 +465,7 @@ print("We see 4 minor spikes and 1 major spike.")
 
 ```
 
-
-
-b)
+b)  
 
 ```{r}
 data <- read_csv("us-states.csv")
@@ -459,7 +507,7 @@ ggplotly(g)
 
 ```
 
-c)
+c)  
 
 ```{r}
 
