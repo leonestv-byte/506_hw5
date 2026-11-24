@@ -53,7 +53,8 @@ setClass("waldCI", slots = c(
   ub = "numeric"
   ))
 
-# Validator - By Standard, we do not use roxygen for setValidity()
+# Validator - By Standard, we do not
+# use roxygen for setValidity()
 setValidity("waldCI", function(object) {
   
   has_level <- length(object@level) == 1
@@ -71,13 +72,16 @@ setValidity("waldCI", function(object) {
   if (length(object@sterr) == 1 && object@sterr < 0) {
     stop ("can't have a negative sterr")
   }
-  if (length(object@lb) == 1 && length(object@ub) == 1 && object@lb > object@ub) {
+  if (length(object@lb) == 1 && length(object@ub) == 1
+      && object@lb > object@ub) {
     stop("can't have lb greater than ub")
   }
-  if (length(object@lb) == 1 && length(object@ub) == 1 && object@lb == Inf) {
+  if (length(object@lb) == 1 && length(object@ub) == 1
+      && object@lb == Inf) {
     stop("can't have infinite lb")
   }
-  if (length(object@lb) == 1 && length(object@ub) == 1 && object@ub == Inf) {
+  if (length(object@lb) == 1 && length(object@ub) == 1
+      && object@ub == Inf) {
     stop("can't have infinite ub")
   }
   
@@ -105,9 +109,10 @@ setValidity("waldCI", function(object) {
 
 ```{r}
 
-#' Show an Wald Confidence Interval
+#' Show a Wald Confidence Interval
 #'
-#' Prints a summary of a Wald Confidence Interval.
+#' Prints a summary of
+#' a Wald Confidence Interval.
 #'
 #' @param object A waldCI object.
 #' @return Invisibly.
@@ -141,7 +146,8 @@ setMethod("show", "waldCI",
 #'
 #' @param x An object of class waldCI.
 #'
-#' @return A numeric scalar that represents the confidence level, between 0 and 1.
+#' @return A numeric scalar that represents the
+#' confidence level, between 0 and 1.
 #' @export
 setGeneric("level",
            function(x) {
@@ -247,7 +253,8 @@ setMethod("sterr", "waldCI", function(x) {
 #' Set the confidence level of a waldCI object.
 #'
 #' @param x A waldCI object.
-#' @param value A numeric value specifying the new confidence level.
+#' @param value A numeric value
+#' specifying the new confidence level.
 #'
 #' @return The updated waldCI object.
 #' @export
@@ -401,15 +408,18 @@ setMethod("contains", "waldCI",
 #'
 #' @return True if contained, else false.
 #' @export
-setGeneric("overlap", function(object_one, object_two) {
+setGeneric("overlap", function(object_one,
+                               object_two) {
   standardGeneric("overlap")
 })
 
 #' @describeIn overlap method.
 #' @export
 setMethod("overlap",
-          signature = c(object_one = "waldCI", object_two = "waldCI"),
-  function(object_one, object_two) {
+          signature = c(object_one = "waldCI",
+                        object_two = "waldCI"),
+  function(object_one,
+           object_two) {
     
     has_mean <- length(object_one@mean) == 1
     has_sterr <- length(object_one@sterr) == 1
@@ -449,10 +459,14 @@ setMethod("overlap",
       ub_two <- object_two@ub
     }
     
-      overlap <- ((lb_one > lb_two & lb_one < ub_two) |
-                    (ub_one > lb_two & ub_one < ub_two) |
-                    (lb_two > lb_one & lb_two < ub_one) |
-                    (ub_two > lb_one & ub_two < ub_one))
+      overlap <- ((lb_one > lb_two
+                   & lb_one < ub_two) |
+                    (ub_one > lb_two
+                   & ub_one < ub_two) |
+                    (lb_two > lb_one
+                   & lb_two < ub_one) |
+                    (ub_two > lb_one
+                   & ub_two < ub_one))
   
   return(overlap)
       
@@ -511,11 +525,17 @@ setMethod("transformCI",
   option_2 <- has_lb & has_ub
   
   if (option_1) {
-    return(new("waldCI", level = object@level, mean = fn(object@mean), sterr = fn(object@sterr)))
-  } else {
-    return(new("waldCI", level = object@level, lb = fn(object@lb), ub = fn(object@ub)))
-  }
-})
+    return(new("waldCI",
+               level = object@level,
+               mean = fn(object@mean),
+               sterr = fn(object@sterr)))
+    } else {
+      return(new("waldCI",
+                 level = object@level,
+                 lb = fn(object@lb),
+                 ub = fn(object@ub)))
+      }
+  })
 
 ```
 
@@ -523,9 +543,18 @@ setMethod("transformCI",
 
 ```{r}
 
-ci1 <- new("waldCI", level = .95, lb = 17.2, ub = 24.7)
-ci2 <- new("waldCI", level = .99, mean = 13, sterr = 2.5)
-ci3 <- new("waldCI", level = .75, lb = 27.43, ub = 39.22)
+ci1 <- new("waldCI",
+           level = .95,
+           lb = 17.2,
+           ub = 24.7)
+ci2 <- new("waldCI",
+           level = .99,
+           mean = 13,
+           sterr = 2.5)
+ci3 <- new("waldCI",
+           level = .75,
+           lb = 27.43,
+           ub = 39.22)
 
 
 ci1
@@ -555,42 +584,58 @@ mean(transformCI(ci2, log))
 ```{r}
 result <- tryCatch(
   expr = {
-    x <- new("waldCI", confidence_level = 0.9, mean = 2, sterr = -2)
+    x <- new("waldCI",
+             confidence_level = 0.9,
+             mean = 2,
+             sterr = -2)
   },
   error = function(e) {
     print(e)
-    print("Validated an error occurred for negative standard error.")
+    print("Validated an error occurred")
+    print("for negative standard error.")
   }
 )
 
 result <- tryCatch(
   expr = {
-    x <- new("waldCI", confidence_level = 0.9, lb = 2, ub = 1)
+    x <- new("waldCI",
+             confidence_level = 0.9,
+             lb = 2,
+             ub = 1)
   },
   error = function(e) {
     print(e)
-    print("Validated an error occurred for lb > ub.")
+    print("Validated an error")
+    print("occurred for lb > ub.")
   }
 )
 
 result <- tryCatch(
   expr = {
-    x <- new("waldCI", confidence_level = 0.9, lb = 2, ub = Inf)
+    x <- new("waldCI",
+             confidence_level = 0.9,
+             lb = 2,
+             ub = Inf)
   },
   error = function(e) {
     print(e)
-    print("Validated an error occurred for Infinite bounds.")
+    print("Validated an error occurred")
+    print("for Infinite bounds.")
   }
 )
 
 result <- tryCatch(
   expr = {
-    x <- new("waldCI", confidence_level = 0.9, lb = 2, ub = 3)
+    x <- new("waldCI",
+             confidence_level = 0.9,
+             lb = 2,
+             ub = 3)
     ub(x) <- 1
   },
   error = function(e) {
     print(e)
-    print("Validated an error occurred for invalid use of setter.")
+    print("Validated an error occurred")
+    print("for invalid use of setter.")
   }
 )
 
@@ -601,18 +646,24 @@ result <- tryCatch(
 Use the “ATP Matches” data from 2019.
 
 ```{r}
-suppressPackageStartupMessages(library(data.table))
+suppressPackageStartupMessages(
+  library(data.table))
 library(data.table)
 tennis <- fread("tennis-atp-sackmann-data/atp_matches_2019.csv")
 ```
 
 ### a) How many tournaments took place in 2019?
 
+
 ```{r}
 
 print(class(tennis))
 
-# We see that it is a data.table type
+```
+
+We see that it is a data.table type
+
+```{r}
 
 print(paste("The 2019 number of tournaments was",
             length(unique(tennis$tourney_id))))
@@ -622,15 +673,19 @@ print(paste("The 2019 number of tournaments was",
 However, there were multiple Davis cup finals.
 ```{r}
 
-tourneys <- unique(tennis[, .(tourney_name)])
+tourneys <- unique(tennis[,
+                          .(tourney_name)])
 
-tourneys[str_detect(tourney_name, "Davis Cup")][1:5]
+tourneys[str_detect(tourney_name,
+                    "Davis Cup")][1:5]
 ```
 
 
 
 ```{r}
-nrow(tourneys[, tourney_name := sub("Davis.*", "Davis Cup", tourney_name)][, .N, by = tourney_name][, N := NULL])
+nrow(tourneys[, tourney_name := sub("Davis.*",
+            "Davis Cup", tourney_name)][,
+            .N, by = tourney_name][, N := NULL])
 ```
 
 We can therefore observe that there are only 69 unique tournaments.
@@ -640,7 +695,12 @@ We can therefore observe that there are only 69 unique tournaments.
 ```{r}
 tennis <- fread("tennis-atp-sackmann-data/atp_matches_2019.csv")
 
-multiwinners <- tennis[order(tourney_name, -match_num), .SD[1], by = tourney_name][, .(wins = .N), by = winner_name][wins > 1][order(-wins)]
+multiwinners <- tennis[order(tourney_name,
+                      -match_num),
+                       .SD[1],
+                      by = tourney_name][,
+                      .(wins = .N),
+                      by = winner_name][wins > 1][order(-wins)]
 
 nrow(multiwinners)
 ```
@@ -649,12 +709,13 @@ There are 17 winners who won multiple tournaments.
 multiwinners %>%
   slice(1:2)
 ```
-We see that Rafael Nadal 9 tournaments (the most).
+We see that Rafael Nadal has 9 tournaments (the most).
 
 ### c) Is there any evidence that winners have more aces than losers? (If you address this with a hypothesis test, do not use base R functionality - continue to remain in the Tidyverse.)
 
 ```{r}
-suppressPackageStartupMessages(library(tidymodels))
+suppressPackageStartupMessages(
+  library(tidymodels))
 
 
 tennis %>%
@@ -669,8 +730,12 @@ We do see that, due to a low p value, we have statistically significant evidence
 ```{r}
 tennis <- fread("tennis-atp-sackmann-data/atp_matches_2019.csv")
 
-tennis_matches_winner_count <- tennis[, .(wins = .N), by = winner_name]
-tennis_matches_loser_count  <- tennis[, .(losses = .N), by = loser_name]
+tennis_matches_winner_count <- tennis[,
+                            .(wins = .N),
+                            by = winner_name]
+tennis_matches_loser_count  <- tennis[,
+                            .(losses = .N),
+                            by = loser_name]
 
 tennis_win_lose_count <- merge(
   tennis_matches_winner_count, 
@@ -680,9 +745,10 @@ tennis_win_lose_count <- merge(
   all = TRUE
 )
 
-tennis_win_lose_count <- tennis_win_lose_count[wins + losses >= 5][, ratio := wins / (wins + losses)][order(-ratio)]
+twlc <- tennis_win_lose_count[wins + losses >= 5][,
+                    ratio := wins / (wins + losses)][order(-ratio)]
 
-print(head(tennis_win_lose_count, 5))
+print(head(twlc, 5))
 ```
 Rafael Nadal, with 60 wins, has the highest win-rate.
 
@@ -724,7 +790,12 @@ g <- ggplot(data, aes(x = Date, y = cases_avg)) +
     axis.text = element_text(color = "darkgrey")
   )
 
-ggplotly(g)
+ggplotly(g) %>%
+  layout(
+    autosize = FALSE,
+    width = 500,
+    height = 350
+  )
 ```
 
 There are 4 minor spikes and 4 major spikes. 
@@ -783,7 +854,12 @@ theme(
     legend.text = element_text(color = "darkgrey")
   )
 
-ggplotly(g)
+ggplotly(g) %>%
+  layout(
+    autosize = FALSE,
+    width = 500,
+    height = 350
+  )
 ```
 
 Overall, they tend to spike at the same times, but Rhode Island spikes bigger. Other differences include that the spike in winter 21-22 did not seem to affect Maine, while it increased rates by a factor of 10 in Rhode Island.
@@ -804,9 +880,18 @@ data20 <- data %>%
   filter(year(Date) == 2020) %>%
   select(State, Date, cases_avg_per_100k)
 
-g <- ggplot(data20, aes(x = Date, y = cases_avg_per_100k, color = State)) + geom_line() + ylab("COVID cases per 100k") + theme(legend.position = "off")
+g <- ggplot(data20, aes(x = Date, y = cases_avg_per_100k,
+                color = State)) +
+  geom_line() +
+  ylab("COVID cases per 100k") +
+  theme(legend.position = "off")
 
-ggplotly(g)
+ggplotly(g) %>%
+  layout(
+    autosize = FALSE,
+    width = 500,
+    height = 350
+  )
 ```
 Now that we've seen the general trend - COVID cases started rising at the same time - we zoom in.
 
@@ -817,7 +902,12 @@ g <- ggplot(data20, aes(x = Date, y = cases_avg_per_100k, color = State)) +
   geom_line() +
   ylab("COVID cases per 100k")
 
-ggplotly(g)
+ggplotly(g) %>%
+  layout(
+    autosize = FALSE,
+    width = 500,
+    height = 350
+  )
 ```
 
 As covid came in a single starting wave and spread, we can deduce it from the graph. We look at the first 5 that had an average of greater than 1 per 100K.
@@ -883,7 +973,12 @@ theme(
     legend.text = element_text(color = "darkgrey")
   )
 
-ggplotly(g)
+ggplotly(g) %>%
+  layout(
+    autosize = FALSE,
+    width = 500,
+    height = 350
+  )
 ```
 
 
