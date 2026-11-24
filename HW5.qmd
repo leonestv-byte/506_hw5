@@ -318,7 +318,10 @@ setMethod("overlap",
       ub_two <- object_two@ub
     }
     
-      overlap <- ((lb_one > lb_two & lb_one < ub_two) | (ub_one > lb_two & ub_one < ub_two) | (lb_two > lb_one & lb_two < ub_one) | (ub_two > lb_one & ub_two < ub_one))
+      overlap <- ((lb_one > lb_two & lb_one < ub_two) |
+                    (ub_one > lb_two & ub_one < ub_two) |
+                    (lb_two > lb_one & lb_two < ub_one) |
+                    (ub_two > lb_one & ub_two < ub_one))
   
   return(overlap)
       
@@ -445,9 +448,10 @@ result <- tryCatch(
 
 ## Problem 2 - data.table
 
-# Use the “ATP Matches” data from 2019.
+Use the “ATP Matches” data from 2019.
 
 ```{r}
+suppressPackageStartupMessages(library(data.table))
 library(data.table)
 tennis <- fread("tennis-atp-sackmann-data/atp_matches_2019.csv")
 ```
@@ -500,7 +504,8 @@ Rafael Nadal won the most, at 9 tournaments.
 ### c) Is there any evidence that winners have more aces than losers? (If you address this with a hypothesis test, do not use base R functionality - continue to remain in the Tidyverse.)
 
 ```{r}
-library(tidymodels)
+suppressPackageStartupMessages(library(tidymodels))
+
 
 tennis %>%
   select(w_ace, l_ace) %>%
@@ -657,7 +662,7 @@ Now that we've seen the general trend - COVID cases started rising at the same t
 
 ```{r}
 data20 <- data20 %>%
-  filter(month(Date) %in% c(3, 4, 5)) # Mar-May
+  filter(month(Date) %in% c(3, 4, 5))
 g <- ggplot(data20, aes(x = Date, y = cases_avg_per_100k, color = State)) +
   geom_line() +
   ylab("COVID cases per 100k")
