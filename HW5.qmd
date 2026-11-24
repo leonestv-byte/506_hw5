@@ -33,7 +33,18 @@ Create a class to represent Wald-style normal approximation Confidence Intervals
 #### A validator.
 
 ```{r}
-
+#' An S4 class.
+#'
+#' @description
+#' Stores a wald confidence interval.
+#'
+#' @slot level a confidence level.
+#' @slot mean the mean for a distribution.
+#' @slot sterr the standard error for a distribution.
+#' @slot lb the lower bound for a distribution.
+#' @slot ub the upper bound for a distribution.
+#'
+#' @export
 setClass("waldCI", slots = c(
   level = "numeric",
   mean = "numeric",
@@ -42,6 +53,7 @@ setClass("waldCI", slots = c(
   ub = "numeric"
   ))
 
+# Validator - By Standard, we do not use roxygen for setValidity()
 setValidity("waldCI", function(object) {
   
   has_level <- length(object@level) == 1
@@ -93,6 +105,13 @@ setValidity("waldCI", function(object) {
 
 ```{r}
 
+#' Show an Wald Confidence Interval
+#'
+#' Prints a summary of a Wald Confidence Interval.
+#'
+#' @param object A waldCI object.
+#' @return Invisibly.
+#' @export
 setMethod("show", "waldCI",
   function(object) {
     cat(paste("The confidence level: ", object@level))
@@ -117,11 +136,20 @@ setMethod("show", "waldCI",
 
 # Confidence Level
 
+#' Get the confidence level of a waldCI object
+#'
+#'
+#' @param x An object of class waldCI.
+#'
+#' @return A numeric scalar that represents the confidence level, between 0 and 1.
+#' @export
 setGeneric("level",
            function(x) {
              standardGeneric("level")
            })
 
+#' @rdname level
+#' @export
 setMethod("level", "waldCI", function(x) {
   x@level
 })
@@ -129,33 +157,61 @@ setMethod("level", "waldCI", function(x) {
 
 # Lower Bound
 
+#' Get the lower bound of a waldCI object
+#'
+#'
+#' @param x An object of class waldCI.
+#'
+#' @return A lower bound.
+#' @export
 setGeneric("lb",
            function(x) {
              standardGeneric("lb")
            })
 
+
+#' @rdname lb
+#' @export
 setMethod("lb", "waldCI", function(x) {
   x@lb
 })
 
 # Upper Bound
 
+#' Get the upper bound of a waldCI object
+#'
+#'
+#' @param x An object of class waldCI.
+#'
+#' @return An upper bound.
+#' @export
 setGeneric("ub",
            function(x) {
              standardGeneric("ub")
            })
 
+#' @rdname ub
+#' @export
 setMethod("ub", "waldCI", function(x) {
   x@ub
 })
 
 # Mean
 
+#' Get the mean of a waldCI object
+#'
+#'
+#' @param x An object of class waldCI.
+#'
+#' @return A mean of a distribution.
+#' @export
 setGeneric("mean",
            function(x) {
              standardGeneric("mean")
            })
 
+#' @rdname mean
+#' @export
 setMethod("mean", "waldCI", function(x) {
   x@mean
 })
@@ -163,11 +219,20 @@ setMethod("mean", "waldCI", function(x) {
 
 # Standard Error
 
+#' Get the standard deviation. of a waldCI object
+#'
+#'
+#' @param x An object of class waldCI.
+#'
+#' @return A standard deviation.
+#' @export
 setGeneric("sterr",
            function(x) {
              standardGeneric("sterr")
            })
 
+#' @rdname standard error.
+#' @export
 setMethod("sterr", "waldCI", function(x) {
   x@sterr
 })
@@ -179,10 +244,19 @@ setMethod("sterr", "waldCI", function(x) {
 ```{r}
 # Confidence Level
 
+#' Set the confidence level of a waldCI object.
+#'
+#' @param x A waldCI object.
+#' @param value A numeric value specifying the new confidence level.
+#'
+#' @return The updated waldCI object.
+#' @export
 setGeneric("level<-", function(x, value) {
   standardGeneric("level<-")
 })
 
+#' @rdname level-set
+#' @export
 setMethod("level<-", "waldCI", function(x, value) {
   x@level <- value
   validObject(x)
@@ -191,10 +265,19 @@ setMethod("level<-", "waldCI", function(x, value) {
 
 # Lower Bound
 
+#' Set the lower bound of a waldCI object.
+#'
+#' @param x A waldCI object.
+#' @param value A numeric value specifying the lower bound.
+#'
+#' @return The updated waldCI object.
+#' @export
 setGeneric("lb<-", function(x, value) {
   standardGeneric("lb<-")
 })
 
+#' @rdname lowerbound-set
+#' @export
 setMethod("lb<-", "waldCI", function(x, value) {
   x@lb <- value
   validObject(x)
@@ -203,10 +286,19 @@ setMethod("lb<-", "waldCI", function(x, value) {
 
 # Upper Bound
 
+#' Set the lower bound of a waldCI object.
+#'
+#' @param x A waldCI object.
+#' @param value A numeric value specifying the upper bound.
+#'
+#' @return The updated waldCI object.
+#' @export
 setGeneric("ub<-", function(x, value) {
   standardGeneric("ub<-")
 })
 
+#' @rdname upperbound-set
+#' @export
 setMethod("ub<-", "waldCI", function(x, value) {
   x@ub <- value
   validObject(x)
@@ -215,10 +307,19 @@ setMethod("ub<-", "waldCI", function(x, value) {
 
 # Mean
 
+#' Set the mean of a waldCI object.
+#'
+#' @param x A waldCI object.
+#' @param value A numeric value specifying the mean.
+#'
+#' @return The updated waldCI object.
+#' @export
 setGeneric("mean<-", function(x, value) {
   standardGeneric("mean<-")
 })
 
+#' @rdname mean-set
+#' @export
 setMethod("mean<-", "waldCI", function(x, value) {
   x@mean <- value
   validObject(x)
@@ -226,11 +327,20 @@ setMethod("mean<-", "waldCI", function(x, value) {
 })
 
 # Error
-
+#' Set the standard error of a waldCI object.
+#'
+#' @param x A waldCI object.
+#' @param value A numeric value specifying the standard error.
+#'
+#' @return The updated waldCI object.
+#' @export
 setGeneric("sterr<-", function(x, value) {
   standardGeneric("sterr<-")
 })
 
+
+#' @rdname sterr-set
+#' @export
 setMethod("sterr<-", "waldCI", function(x, value) {
   x@sterr <- value
   validObject(x)
@@ -242,11 +352,23 @@ setMethod("sterr<-", "waldCI", function(x, value) {
 #### A contains method, returning a logical of whether a value is within a CI.
 
 ```{r}
+
+#' Check if a confidence interval contains a value
+#'
+#' Tests whether a value falls within a confidence interval.
+#'
+#' @param object An object of class waldCI.
+#' @param value A value to check.
+#'
+#' @return True if contained, else false.
+#' @export
 setGeneric("contains",
            function(object, value) {
              standardGeneric("contains")
            })
 
+#' @describeIn contains method.
+#' @export
 setMethod("contains", "waldCI",
   function(object, value) {
     
@@ -272,10 +394,19 @@ setMethod("contains", "waldCI",
 #### An overlap method, that takes in two waldCI’s, and returns a logical of whether the two confidence intervals overlap.
 
 ```{r}
+#' Tests overlap.
+#'
+#' @param object_one the first waldCI.
+#' @param object_two the second waldCI.
+#'
+#' @return True if contained, else false.
+#' @export
 setGeneric("overlap", function(object_one, object_two) {
   standardGeneric("overlap")
 })
 
+#' @describeIn overlap method.
+#' @export
 setMethod("overlap",
           signature = c(object_one = "waldCI", object_two = "waldCI"),
   function(object_one, object_two) {
@@ -333,6 +464,15 @@ setMethod("overlap",
 #### as.numeric to return c(lb, ub). (Hint: The second argument of setGeneric is not needed when an existing s3 function uses the .Primitive function.)
 
 ```{r}
+
+#' Make a waldCI object a numeric.
+#'
+#' Extracts numeric representation.
+#'
+#' @param x A waldCI object.
+#'
+#' @return A vector.
+#' @export
 setMethod("as.numeric",
           signature = c(x = "waldCI"),
   function(x) {
@@ -343,13 +483,24 @@ setMethod("as.numeric",
 #### transformCI which takes in a function and a waldCI, and returns the transformed waldCI object. Warn the user that only monotonic functions make sense.
 
 ```{r}
+#' Tests transform confidence interval.
+#'
+#' @param object a wald confidence interval.
+#' @param fn a function to transform with.
+#'
+#' @return True if contained, else false.
+#' @export
 setGeneric("transformCI", function(object, fn) {
   standardGeneric("transformCI")
 })
 
+#' @describeIn transform method.
+#' @export
 setMethod("transformCI",
           signature = c(object = "waldCI"),
   function(object, fn) {
+    
+  print("Warning: only monotonic functions make sense.")
     
   has_mean <- length(object@mean) == 1
   has_sterr <- length(object@sterr) == 1
@@ -364,7 +515,6 @@ setMethod("transformCI",
   } else {
     return(new("waldCI", level = object@level, lb = fn(object@lb), ub = fn(object@ub)))
   }
-  
 })
 
 ```
@@ -400,7 +550,7 @@ eci1
 mean(transformCI(ci2, log))
 ```
 
-### c)
+### c) Show that your validator does not allow the creation of invalid confidence intervals.
 
 ```{r}
 result <- tryCatch(
@@ -440,7 +590,7 @@ result <- tryCatch(
   },
   error = function(e) {
     print(e)
-    print("Validated an error occurred for invalid setter.")
+    print("Validated an error occurred for invalid use of setter.")
   }
 )
 
@@ -483,7 +633,7 @@ tourneys[str_detect(tourney_name, "Davis Cup")][1:5]
 nrow(tourneys[, tourney_name := sub("Davis.*", "Davis Cup", tourney_name)][, .N, by = tourney_name][, N := NULL])
 ```
 
-So there are only 69 unique tournaments.
+We can therefore observe that there are only 69 unique tournaments.
 
 ### b) Did any player win more than one tournament? If so, how many players won more than one tournament, and how many tournaments did the most winning player(s) win?
 
@@ -499,7 +649,7 @@ There are 17 winners who won multiple tournaments.
 multiwinners %>%
   slice(1:2)
 ```
-Rafael Nadal won the most, at 9 tournaments.
+We see that Rafael Nadal 9 tournaments (the most).
 
 ### c) Is there any evidence that winners have more aces than losers? (If you address this with a hypothesis test, do not use base R functionality - continue to remain in the Tidyverse.)
 
@@ -512,7 +662,7 @@ tennis %>%
   mutate(win_more = w_ace > l_ace) %>%
   prop_test(win_more ~ NULL, p = .5)
 ```
-Therefore, yes we have statistical significant evidence that winners perform more aces than losers.
+We do see that, due to a low p value, we have statistically significant evidence that winners perform more aces than losers.
 
 ### d) Identify the player(s) with the highest win-rate. (Note that this is NOT asking for the highest number of wins.) Restrict to players with at least 5 matches.
 
@@ -534,7 +684,7 @@ tennis_win_lose_count <- tennis_win_lose_count[wins + losses >= 5][, ratio := wi
 
 print(head(tennis_win_lose_count, 5))
 ```
-One player has the highest win-rate, and it is again Rafael Nadal.
+Rafael Nadal, with 60 wins, has the highest win-rate.
 
 ## Problem 3 - plotly
 
