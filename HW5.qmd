@@ -19,6 +19,7 @@ library(readr)
 library(ggplot2)
 suppressPackageStartupMessages(library(plotly))
 library(plotly)
+library(stringr)
 ```
 
 ## Problem 1 - OOP Programming
@@ -451,7 +452,7 @@ library(data.table)
 tennis <- fread("tennis-atp-sackmann-data/atp_matches_2019.csv")
 ```
 
-### a)
+### a) How many tournaments took place in 2019?
 
 ```{r}
 
@@ -476,23 +477,16 @@ tourneys[str_detect(tourney_name, "Davis Cup")][1:5]
 
 ```{r}
 nrow(tourneys[, tourney_name := sub("Davis.*", "Davis Cup", tourney_name)][, .N, by = tourney_name][, N := NULL])
-
 ```
 
-### b)
+So there are only 69 unique tournaments.
+
+### b) Did any player win more than one tournament? If so, how many players won more than one tournament, and how many tournaments did the most winning player(s) win?
 
 ```{r}
 tennis <- fread("tennis-atp-sackmann-data/atp_matches_2019.csv")
 
-multiwinners <- tennis[
-  order(tourney_name, -match_num), .SD[1], by = tourney_name
-][
-  , .(wins = .N), by = winner_name
-][
-  wins > 1
-][
-  order(-wins)
-]
+multiwinners <- tennis[order(tourney_name, -match_num), .SD[1], by = tourney_name][, .(wins = .N), by = winner_name][wins > 1][order(-wins)]
 
 nrow(multiwinners)
 ```
@@ -503,7 +497,7 @@ multiwinners %>%
 ```
 Rafael Nadal won the most, at 9 tournaments.
 
-### c)
+### c) Is there any evidence that winners have more aces than losers? (If you address this with a hypothesis test, do not use base R functionality - continue to remain in the Tidyverse.)
 
 ```{r}
 library(tidymodels)
@@ -515,17 +509,17 @@ tennis %>%
 ```
 Therefore, yes we have statistical significant evidence that winners perform more aces than losers.
 
-### d)
+### d) Identify the player(s) with the highest win-rate. (Note that this is NOT asking for the highest number of wins.) Restrict to players with at least 5 matches.
 
 ```{r}
-data_tennis_matches <- fread("tennis-atp-sackmann-data/atp_matches_2019.csv")
+tennis <- fread("tennis-atp-sackmann-data/atp_matches_2019.csv")
 
-data_tennis_matches_winner_count <- data_tennis_matches[, .(wins = .N), by = winner_name]
-data_tennis_matches_loser_count  <- data_tennis_matches[, .(losses = .N), by = loser_name]
+tennis_matches_winner_count <- tennis[, .(wins = .N), by = winner_name]
+tennis_matches_loser_count  <- tennis[, .(losses = .N), by = loser_name]
 
 tennis_win_lose_count <- merge(
-  data_tennis_matches_winner_count, 
-  data_tennis_matches_loser_count, 
+  tennis_matches_winner_count, 
+  tennis_matches_loser_count, 
   by.x = "winner_name", 
   by.y = "loser_name", 
   all = TRUE
@@ -544,7 +538,7 @@ data <- read_csv("us-states.csv")
 
 ```
 
-# a)
+# a) How many major and minor spikes in cases were there?
 
 ```{r}
 
@@ -557,57 +551,94 @@ library(ggplot2)
 library(plotly)
 
 g <- ggplot(data, aes(x = Date, y = cases_avg)) +
+  geom_line(color = "red", linewidth = 1.1) + 
+  labs(
+    title = "COVID Daily Case Numbers.",
+    x = "Date",
+    y = "Daily Cases"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.background = element_rect(fill = "black", color = NA),
+    panel.background = element_rect(fill = "black", color = NA),
+    
+    panel.grid.major = element_line(color = "black", linewidth = 0.5),
+    panel.grid.minor = element_blank(),
+    plot.title = element_text(color = "white", face = "bold", size = 14),
+    axis.title = element_text(color = "grey", size = 11),
+    axis.text = element_text(color = "darkgrey")
+  )
+
+ggplotly(g)
+```
+
+There are 4 minor spikes and 4 major spikes. 
+
+
+# b) For the states with the highest and lowest overall rates per population, what differences do you see in their trajectories over time?
+
+```{r}
+
+data <- read_csv("us-states.csv")
+
+
+state_rates <- aggregate(
+  cases_avg_per_100k ~ state,
+  data = data,
+  na.rm = TRUE,
+  FUN = sum
+)
+
+extremes <- state_rates$state[
+  state_rates$cases_avg_per_100k %in%
+    range(state_rates$cases_avg_per_100k)
+]
+
+trajectory <- data[data$state %in%
+                     extremes, ]
+trajectory <- trajectory[order(trajectory$date), ]
+
+data$date <- as.Date(data$date)
+
+g <- data[data$state %in%
+       extremes, ] |>
+  ggplot(aes(x = date,
+             y = cases_avg_per_100k,
+             color = state)) +
   geom_line() +
-  ylab("Daily Cases")
+  labs(
+    title = paste("Daily case rates: ",
+                  paste(extremes, collapse = ", ")),
+    x = "Date",
+    y = "Cases per 100,000",
+    color = "State"
+  ) +
+  theme_minimal()
 
 ggplotly(g)
 ```
 
-# b)
+Overall, they tend to spike at the same times, but Rhode Island spikes bigger. Other differences include that the spike in winter 21-22 did not seem to affect Maine, while it increased rates by a factor of 10 in Rhode Island.
+
+
+### c) Identify, to the best of your ability without a formal test, the first five states to experience COVID in a substantial way.
 
 ```{r}
-data_state <- data %>%
-  group_by(State) %>%
-  summarize(total = sum(cases_avg_per_100k)) %>%
-  ungroup()
+data <- read_csv("us-states.csv")
+data$date <- lubridate::ymd(data$date)
 
-g <- ggplot(data_state, aes(x = total, y = State, label = State)) +
-  geom_point(aes(color = total == max(total) | total == min(total))) +
-  geom_text(aes(nudge_x = ifelse(total > 37500, -150, 150),
-                hjust = ifelse(total > 37500, 1, 0))) +
-  scale_y_discrete(labels = NULL, breaks = NULL, name = "") +
-  theme(legend.position = "off") +
-  xlab("Total COVID cases 01/2020-03/2023")
+names(data)[names(data) == "date"] <- "Date"
+names(data)[names(data) == "state"] <- "State"
 
-ggplotly(g)
-
-```
-
-```{r}
-g <- ggplot(data %>% filter(State == "Maine" | State == "Rhode Island"),
-       aes(x = Date, y = cases_avg_per_100k, color = State)) +
-  geom_line() +
-  ylab("COVID cases per 100k")
-
-ggplotly(g)
-
-```
-
-
-### c) 
-
-```{r}
 data20 <- data %>%
   filter(year(Date) == 2020) %>%
   select(State, Date, cases_avg_per_100k)
 
-g <- ggplot(data20, aes(x = Date, y = cases_avg_per_100k, color = State)) +
-  geom_line() +
-  ylab("COVID cases per 100k") +
-  theme(legend.position = "off") # suppress legend for now
+g <- ggplot(data20, aes(x = Date, y = cases_avg_per_100k, color = State)) + geom_line() + ylab("COVID cases per 100k") + theme(legend.position = "off")
 
 ggplotly(g)
 ```
+Now we zoom in.
 
 ```{r}
 data20 <- data20 %>%
@@ -619,24 +650,73 @@ g <- ggplot(data20, aes(x = Date, y = cases_avg_per_100k, color = State)) +
 ggplotly(g)
 ```
 
-```{r}
-data20 <- data20 %>%
-  filter(month(Date) %in% c(3, 4, 5)) # Mar-May
+As covid came in a single starting wave and spread, we can deduce it from the graph. We look at the first 5 that had an average of greater than 1 per 100K.
 
-g <- ggplot(data20, aes(x = Date, y = cases_avg_per_100k, color = State)) +
-  geom_line() +
-  ylab("COVID cases per 100k")
+```{r}
+
+data <- read_csv("us-states.csv",
+                 show_col_types = FALSE) %>%
+  mutate(date = as.Date(date))
+
+first_substantial <- data %>%
+  filter(cases_avg_per_100k >= 1) %>%
+  group_by(state) %>%
+  filter(!(state  %in%
+             c("Guam", "District of Columbia"))) %>%
+  slice_min(date,
+            n = 1,
+            with_ties = FALSE) %>%
+  ungroup() %>%
+  arrange(date) %>%
+  slice_head(n = 5)
+
+first_substantial %>%
+  select(state,
+         date,
+         cases_avg_per_100k)
+
+top_5_states <- first_substantial %>%
+  pull(state)
+
+g <- data %>%
+  filter(state %in%
+           top_5_states,
+         date >= as.Date("2020-01-01"),
+         date <= as.Date("2020-3-31")) %>%
+  group_by(state, date) %>%
+  summarise(total_cases = sum(cases,
+                              na.rm = TRUE),
+            .groups = "drop") %>%
+  ggplot(aes(x = date,
+             y = total_cases,
+             color = state,
+             group = state)) +
+  geom_line(linewidth = 1) +
+  labs(
+    title = "COVID Cases.",
+    x = "Date",
+    y = "Number of Cases",
+    color = "State"
+  ) +
+  theme_minimal() +
+theme(
+    plot.background = element_rect(fill = "black", color = NA),
+    panel.background = element_rect(fill = "black", color = NA),
+    panel.grid.major = element_line(color = "grey", linewidth = 0.5),
+    panel.grid.minor = element_blank(),
+    plot.title = element_text(color = "white", face = "bold", size = 14),
+    axis.title = element_text(color = "grey", size = 11),
+    axis.text = element_text(color = "darkgrey"),
+    legend.background = element_rect(fill = "black", color = NA),
+    legend.key = element_rect(fill = "black", color = NA),
+    legend.title = element_text(color = "white", face = "bold"),
+    legend.text = element_text(color = "darkgrey")
+  )
 
 ggplotly(g)
 ```
 
 
-```{r}
-g <- ggplot(data20 %>% filter(cases_avg_per_100k > 20),
-       aes(x = Date, y = cases_avg_per_100k, color = State)) +
-  ylab("COVID cases per 100k") +
-  geom_line()
+Therefore, we conclude that Washington, Louisiana, Michigan, New Jersey, and New York were the first five states to experience COVID in a significant way.
 
-ggplotly(g)
 
-```
