@@ -763,6 +763,12 @@ data <- read_csv("us-states.csv")
 
 ```{r}
 
+#
+#
+# Q3 a) Initial Time Series Graphs.
+#
+#
+
 data$date <- lubridate::ymd(data$date)
 
 names(data)[names(data) == "date"] <- "Date"
@@ -804,6 +810,12 @@ There are 4 minor spikes and 4 major spikes.
 # b) For the states with the highest and lowest overall rates per population, what differences do you see in their trajectories over time?
 
 ```{r}
+
+#
+#
+# Q3 b) Maine and Rhode Island.
+#
+#
 
 data <- read_csv("us-states.csv")
 
@@ -870,6 +882,13 @@ Overall, they tend to spike at the same times, but Rhode Island spikes bigger. O
 We start by viewing a time series graph of all COVID cases coming in at once.
 
 ```{r}
+
+#
+#
+# Q3 C) All States graph.
+#
+#
+
 data <- read_csv("us-states.csv")
 data$date <- lubridate::ymd(data$date)
 
@@ -896,6 +915,13 @@ ggplotly(g) %>%
 Now that we've seen the general trend - COVID cases started rising at the same time - we zoom in.
 
 ```{r}
+
+#
+#
+# Q3 C) Zoomed in.
+#
+#
+
 data20 <- data20 %>%
   filter(month(Date) %in% c(3, 4, 5))
 g <- ggplot(data20, aes(x = Date, y = cases_avg_per_100k, color = State)) +
@@ -913,6 +939,11 @@ ggplotly(g) %>%
 As covid came in a single starting wave and spread, we can deduce it from the graph. We look at the first 5 that had an average of greater than 1 per 100K.
 
 ```{r}
+#
+#
+# Q3 C) Graph of First 5.
+#
+#
 
 data <- read_csv("us-states.csv",
                  show_col_types = FALSE) %>%
