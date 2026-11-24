@@ -613,7 +613,20 @@ g <- data[data$state %in%
     y = "Cases per 100,000",
     color = "State"
   ) +
-  theme_minimal()
+  theme_minimal() +
+theme(
+    plot.background = element_rect(fill = "black", color = NA),
+    panel.background = element_rect(fill = "black", color = NA),
+    panel.grid.major = element_line(color = "grey", linewidth = 0.5),
+    panel.grid.minor = element_blank(),
+    plot.title = element_text(color = "white", face = "bold", size = 14),
+    axis.title = element_text(color = "grey", size = 11),
+    axis.text = element_text(color = "darkgrey"),
+    legend.background = element_rect(fill = "black", color = NA),
+    legend.key = element_rect(fill = "black", color = NA),
+    legend.title = element_text(color = "white", face = "bold"),
+    legend.text = element_text(color = "darkgrey")
+  )
 
 ggplotly(g)
 ```
@@ -622,6 +635,8 @@ Overall, they tend to spike at the same times, but Rhode Island spikes bigger. O
 
 
 ### c) Identify, to the best of your ability without a formal test, the first five states to experience COVID in a substantial way.
+
+We start by viewing a time series graph of all COVID cases coming in at once.
 
 ```{r}
 data <- read_csv("us-states.csv")
@@ -638,7 +653,7 @@ g <- ggplot(data20, aes(x = Date, y = cases_avg_per_100k, color = State)) + geom
 
 ggplotly(g)
 ```
-Now we zoom in.
+Now that we've seen the general trend - COVID cases started rising at the same time - we zoom in.
 
 ```{r}
 data20 <- data20 %>%
