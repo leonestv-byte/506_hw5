@@ -1,0 +1,563 @@
+---
+title: "HW5_Revised_V2"
+author: "Steven Leone"
+format: html
+editor: visual
+---
+
+This is the github repository: https://github.com/leonestv-byte/506_hw5
+
+## Exercise 1
+
+```{r}
+library(dplyr)
+library(tidyverse)
+library(DBI)
+library(knitr)
+library(tidyr)
+library(readr)
+library(ggplot2)
+library(plotly)
+```
+
+### a)
+
+```{r}
+
+setClass("waldCI", slots = c(
+  confidence_level = "numeric",
+  mean = "numeric",
+  sterr = "numeric",
+  lb = "numeric",
+  ub = "numeric"
+  ))
+
+setValidity("waldCI", function(object) {
+  if (object@confidence_level > 1) {
+    stop("confidence_level too high")
+  }
+  if ( length(object@confidence_level) == 1 && object@confidence_level < 0) {
+    stop("confidence_level too high")
+  }
+  if (length(object@sterr) == 1 && object@sterr < 0) {
+    stop ("can't have a negative sterr")
+  }
+  if (length(object@lb) == 1 && length(object@ub) == 1 && object@lb > object@ub) {
+    stop("can't have lb greater than ub")
+  }
+  if (length(object@lb) == 1 && length(object@ub) == 1 && object@lb == Inf) {
+    stop("can't have infinite lb")
+  }
+  if (length(object@lb) == 1 && length(object@ub) == 1 && object@ub == Inf) {
+    stop("can't have infinite ub")
+  }
+  has_mean <- length(object@mean) == 1
+  has_sterr <- length(object@sterr) == 1
+  has_lb <- length(object@lb) == 1
+  has_ub <- length(object@ub) == 1
+  
+  option_1 <- has_mean & has_sterr
+  option_2 <- has_lb & has_ub
+  
+  
+  if (option_1 | option_2) {
+    return(TRUE)
+  } else {
+    stop("needs mean and sterr or lb and ub")
+  }
+  
+})
+
+setMethod("show", "waldCI",
+  function(object) {
+    cat(object@confidence_level)
+    cat("\n")
+    cat(object@mean)
+    cat(object@sterr)
+    return(invisible(object))
+  }
+)
+
+#confidence level
+setGeneric("confidence_level",
+           function(x) {
+             standardGeneric("confidence_level")
+           })
+
+setMethod("confidence_level", "waldCI", function(x) {
+  x@confidence_level
+})
+
+setGeneric("confidence_level<-", function(x, value) {
+  standardGeneric("confidence_level<-")
+})
+
+setMethod("confidence_level<-", "waldCI", function(x, value) {
+  x@confidence_level <- value
+  validObject(x)
+  return(x)
+})
+
+#lb
+setGeneric("lb",
+           function(x) {
+             standardGeneric("lb")
+           })
+
+setMethod("lb", "waldCI", function(x) {
+  x@lb
+})
+
+setGeneric("lb<-", function(x, value) {
+  standardGeneric("lb<-")
+})
+
+setMethod("lb<-", "waldCI", function(x, value) {
+  x@lb <- value
+  validObject(x)
+  return(x)
+})
+
+#ub
+setGeneric("ub",
+           function(x) {
+             standardGeneric("ub")
+           })
+
+setMethod("ub", "waldCI", function(x) {
+  x@ub
+})
+
+setGeneric("ub<-", function(x, value) {
+  standardGeneric("ub<-")
+})
+
+setMethod("ub<-", "waldCI", function(x, value) {
+  x@ub <- value
+  validObject(x)
+  return(x)
+})
+
+#mean
+setGeneric("mean",
+           function(x) {
+             standardGeneric("mean")
+           })
+
+setMethod("mean", "waldCI", function(x) {
+  x@mean
+})
+
+setGeneric("mean<-", function(x, value) {
+  standardGeneric("mean<-")
+})
+
+setMethod("mean<-", "waldCI", function(x, value) {
+  x@mean <- value
+  validObject(x)
+  return(x)
+})
+
+#sterr
+setGeneric("sterr",
+           function(x) {
+             standardGeneric("sterr")
+           })
+
+setMethod("sterr", "waldCI", function(x) {
+  x@sterr
+})
+
+setGeneric("sterr<-", function(x, value) {
+  standardGeneric("sterr<-")
+})
+
+setMethod("sterr<-", "waldCI", function(x, value) {
+  x@sterr <- value
+  validObject(x)
+  return(x)
+})
+
+setGeneric("contains",
+           function(object, value) {
+             standardGeneric("contains")
+           })
+
+setMethod("contains", "waldCI",
+  function(object, value) {
+    
+  has_mean <- length(object@mean) == 1
+  has_sterr <- length(object@sterr) == 1
+  has_lb <- length(object@lb) == 1
+  has_ub <- length(object@ub) == 1
+    
+    option_1 <- has_mean & has_sterr
+    option_2 <- has_lb & has_ub
+    
+    if (option_1) {
+      lb <- object@mean - (2 * object@sterr)
+      ub <- object@mean - (2 * object@sterr)
+      return(value > lb & value < ub)
+    } else {
+      return(value > object@lb & value < object@ub)
+    }
+  }
+)
+
+setGeneric("overlap", function(object_one, object_two) {
+  standardGeneric("overlap")
+})
+
+setMethod("overlap",
+          signature = c(object_one = "waldCI", object_two = "waldCI"),
+  function(object_one, object_two) {
+    
+    has_mean <- length(object_one@mean) == 1
+    has_sterr <- length(object_one@sterr) == 1
+    has_lb <- length(object_one@lb) == 1
+    has_ub <- length(object_one@ub) == 1
+    
+    option_1 <- has_mean & has_sterr
+    option_2 <- has_lb & has_ub
+    
+    lb_one <- 0
+    ub_one <- 0
+    
+    if (option_1) {
+      lb_one <- object_one@mean - (2 * object_one@sterr)
+      ub_one <- object_one@mean - (2 * object_one@sterr)
+    } else {
+      lb_one <- object_one@lb
+      ub_one <- object_one@ub
+    }
+    
+    has_mean <- length(object_two@mean) == 1
+    has_sterr <- length(object_two@sterr) == 1
+    has_lb <- length(object_two@lb) == 1
+    has_ub <- length(object_two@ub) == 1
+    
+    option_1 <- has_mean & has_sterr
+    option_2 <- has_lb & has_ub
+    
+    lb_two <- 0
+    ub_two <- 0
+    
+    if (option_1) {
+      lb_two <- object_two@mean - (2 * object_two@sterr)
+      ub_two <- object_two@mean - (2 * object_two@sterr)
+    } else {
+      lb_two <- object_two@lb
+      ub_two <- object_two@ub
+    }
+    
+      overlap <- ((lb_one > lb_two & lb_one < ub_two) | (ub_one > lb_two & ub_one < ub_two) | (lb_two > lb_one & lb_two < ub_one) | (ub_two > lb_one & ub_two < ub_one))
+  
+  return(overlap)
+      
+  })
+  
+
+
+setMethod("as.numeric",
+          signature = c(x = "waldCI"),
+  function(x) {
+    return(c(x@lb, x@ub))
+})
+
+
+setGeneric("transformCI", function(object, fn) {
+  standardGeneric("transformCI")
+})
+
+setMethod("transformCI",
+          signature = c(object = "waldCI"),
+  function(object, fn) {
+    return(fn(object))
+})
+
+```
+
+b)  
+
+```{r}
+
+ci1 <- new("waldCI", confidence_level = .95, lb = 17.2, ub = 24.7)
+ci2 <- new("waldCI", confidence_level = .99, mean = 13, sterr = 2.5)
+ci3 <- new("waldCI", confidence_level = .75, lb = 27.43, ub = 39.22)
+
+ci1
+ci2
+ci3
+as.numeric(ci1)
+as.numeric(ci2)
+as.numeric(ci3)
+lb(ci2)
+ub(ci2)
+mean(ci1)
+sterr(ci3)
+# TODO: level(ci2)
+lb(ci2) <- 10.5
+mean(ci3) <- 34
+# TODO: level(ci3) <- .8
+contains(ci1, 17)
+contains(ci3, 44)
+overlap(ci1, ci2)
+# TODO: eci1 <- transformCI(ci1, sqrt)
+# TODO: eci1
+# TODO: mean(transformCI(ci2, log))
+```
+
+c)  
+
+```{r}
+
+result <- tryCatch(
+  expr = {
+    x <- new("waldCI", confidence_level = 0.9, mean = 2, sterr = -2)
+  },
+  error = function(e) {
+    print(e)
+    print("Validated an error occurred for negative standard error.")
+  }
+)
+
+result <- tryCatch(
+  expr = {
+    x <- new("waldCI", confidence_level = 0.9, lb = 2, ub = 1)
+  },
+  error = function(e) {
+    print(e)
+    print("Validated an error occurred for lb > ub.")
+  }
+)
+
+result <- tryCatch(
+  expr = {
+    x <- new("waldCI", confidence_level = 0.9, lb = 2, ub = Inf)
+  },
+  error = function(e) {
+    print(e)
+    print("Validated an error occurred for Infinite bounds.")
+  }
+)
+
+result <- tryCatch(
+  expr = {
+    x <- new("waldCI", confidence_level = 0.9, lb = 2, ub = 3)
+    ub(x) <- 1
+  },
+  error = function(e) {
+    print(e)
+    print("Validated an error occurred for invalid setter.")
+  }
+)
+
+```
+
+## Exercise 2
+
+a)  
+
+```{r}
+library(data.table)
+
+data_tennis_matches <- fread(
+  "tennis-atp-sackmann-data/atp_matches_2019.csv")
+
+print(class(data_tennis_matches))
+
+# We see that it is a data.table type
+
+print(paste("The 2019 number of tournaments was",
+            length(unique(data_tennis_matches$tourney_id))))
+```
+
+b)  
+
+```{r}
+data_tennis_matches <- fread("tennis-atp-sackmann-data/atp_matches_2019.csv")
+
+data_tennis_matches_final <- data_tennis_matches[round == "F"]
+
+print(length(unique(na.omit(data_tennis_matches_final$winner_name))))
+print(length(na.omit(data_tennis_matches_final$winner_name)))
+
+print("There are 41 winners and 67 matches, so yes")
+
+winners <- data_tennis_matches_final[, .N, by = winner_name]
+setnames(winners, "N", "count")
+
+repeats <- winners[count > 1, winner_name]
+print(paste("The number of repeat winners is", length(repeats)))
+print(repeats)
+
+max_winner_row <- winners[which.max(count)]
+max_winner <- max_winner_row$winner_name
+max_winners <- max_winner_row$count
+
+print(paste("The player with the most wins is", max_winner))
+print(paste("He has", max_winners))
+```
+
+c)  
+
+```{r}
+
+data_tennis_matches <- fread("tennis-atp-sackmann-data/atp_matches_2019.csv")
+
+# Ran into Error: unable to find an inherited method for function ‘mean’ for signature ‘x = "integer"’
+# Resorted to calling base.
+data_tennis_summarized <- data_tennis_matches[!is.na(w_ace) & !is.na(l_ace), .(
+  mean_winner_aces = base::mean(w_ace),
+  mean_loser_aces = base::mean(l_ace),
+  mean_difference = base::mean(w_ace - l_ace)
+)]
+
+
+print(data_tennis_summarized)
+    
+
+```
+
+d)  
+
+```{r}
+data_tennis_matches <- fread("tennis-atp-sackmann-data/atp_matches_2019.csv")
+
+data_tennis_matches_winner_count <- data_tennis_matches[, .(wins = .N), by = winner_name]
+data_tennis_matches_loser_count  <- data_tennis_matches[, .(losses = .N), by = loser_name]
+
+tennis_win_lose_count <- merge(
+  data_tennis_matches_winner_count, 
+  data_tennis_matches_loser_count, 
+  by.x = "winner_name", 
+  by.y = "loser_name", 
+  all = TRUE
+)
+
+tennis_win_lose_count <- tennis_win_lose_count[wins + losses >= 5][, ratio := wins / (wins + losses)][order(-ratio)]
+
+print(head(tennis_win_lose_count, 5))
+```
+
+## Exercise 3
+
+a)  
+
+```{r}
+data <- read_csv("us-states.csv")
+
+g <- data %>% group_by(date) %>%
+  summarise(total_cases = sum(cases, na.rm = TRUE)) %>%
+  ggplot(aes(x = date, y = total_cases)) +
+  geom_line(color = "steelblue", linewidth = 1) +
+  labs(
+    title = "Daily Cases Starting in 2020.",
+    x = "Date",
+    y = "Number of Cases"
+    ) +
+  theme_minimal()
+
+ggplotly(g)
+
+print("We see 4 minor spikes and 1 major spike.")
+
+```
+
+b)  
+
+```{r}
+data <- read_csv("us-states.csv")
+
+state_rates <- aggregate(
+  cases_avg_per_100k ~ state,
+  data = data,
+  na.rm = TRUE,
+  FUN = sum
+)
+
+extremes <- state_rates$state[
+  state_rates$cases_avg_per_100k %in%
+    range(state_rates$cases_avg_per_100k)
+]
+
+trajectory <- data[data$state %in%
+                     extremes, ]
+trajectory <- trajectory[order(trajectory$date), ]
+
+data$date <- as.Date(data$date)
+
+g <- data[data$state %in%
+       extremes, ] |>
+  ggplot(aes(x = date,
+             y = cases_avg_per_100k,
+             color = state)) +
+  geom_line() +
+  labs(
+    title = paste("Daily case rates: ",
+                  paste(extremes, collapse = ", ")),
+    x = "Date",
+    y = "Cases per 100,000",
+    color = "State"
+  ) +
+  theme_minimal()
+
+ggplotly(g)
+
+```
+
+c)  
+
+```{r}
+
+data <- read_csv("us-states.csv",
+                 show_col_types = FALSE) %>%
+  mutate(date = as.Date(date))
+
+first_substantial <- data %>%
+  filter(cases_avg_per_100k >= 1) %>%
+  group_by(state) %>%
+  filter(!(state  %in%
+             c("Guam", "District of Columbia"))) %>%
+  slice_min(date,
+            n = 1,
+            with_ties = FALSE) %>%
+  ungroup() %>%
+  arrange(date) %>%
+  slice_head(n = 5)
+
+first_substantial %>%
+  select(state,
+         date,
+         cases_avg_per_100k)
+
+top_5_states <- first_substantial %>%
+  pull(state)
+
+g <- data %>%
+  filter(state %in%
+           top_5_states,
+         date >= as.Date("2020-01-01"),
+         date <= as.Date("2020-3-31")) %>%
+  group_by(state, date) %>%
+  summarise(total_cases = sum(cases,
+                              na.rm = TRUE),
+            .groups = "drop") %>%
+  ggplot(aes(x = date,
+             y = total_cases,
+             color = state,
+             group = state)) +
+  geom_line(linewidth = 1) +
+  labs(
+    title = "Daily Cases Starting in 2020",
+    x = "Date",
+    y = "Number of Cases",
+    color = "State"
+  ) +
+  theme_minimal()
+
+library(ggplot2)
+library(plotly)
+
+ggplotly(g)
+```

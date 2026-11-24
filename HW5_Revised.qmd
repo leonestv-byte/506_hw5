@@ -1,0 +1,642 @@
+---
+title: "HW5_Revised"
+author: "Steven Leone"
+format: html
+editor: visual
+---
+
+This is the github repository: https://github.com/leonestv-byte/506_hw5
+
+```{r}
+suppressPackageStartupMessages(library(dplyr))
+library(dplyr)
+suppressPackageStartupMessages(library(tidyverse))
+library(tidyverse)
+library(DBI)
+library(knitr)
+library(tidyr)
+library(readr)
+library(ggplot2)
+suppressPackageStartupMessages(library(plotly))
+library(plotly)
+```
+
+## Problem 1 - OOP Programming
+
+Create a class to represent Wald-style normal approximation Confidence Intervals. Do this using S4.
+
+### a) Define the waldCI class.
+
+#### A constructor, which takes in a confidence level (0,1) and either a mean and standard error, or a lower and upper bound. This should be a custom constructor, not new() or waldCI().
+
+#### A validator.
+
+```{r}
+
+setClass("waldCI", slots = c(
+  level = "numeric",
+  mean = "numeric",
+  sterr = "numeric",
+  lb = "numeric",
+  ub = "numeric"
+  ))
+
+setValidity("waldCI", function(object) {
+  
+  has_level <- length(object@level) == 1
+  if (!has_level) {
+    stop("level cannot be empty.")
+  }
+  
+  if (object@level > 1) {
+    stop("level too high")
+  }
+  if ( length(object@level) == 1 && object@level < 0) {
+    stop("level too high")
+  }
+  
+  if (length(object@sterr) == 1 && object@sterr < 0) {
+    stop ("can't have a negative sterr")
+  }
+  if (length(object@lb) == 1 && length(object@ub) == 1 && object@lb > object@ub) {
+    stop("can't have lb greater than ub")
+  }
+  if (length(object@lb) == 1 && length(object@ub) == 1 && object@lb == Inf) {
+    stop("can't have infinite lb")
+  }
+  if (length(object@lb) == 1 && length(object@ub) == 1 && object@ub == Inf) {
+    stop("can't have infinite ub")
+  }
+  
+  has_mean <- length(object@mean) == 1
+  has_sterr <- length(object@sterr) == 1
+  has_lb <- length(object@lb) == 1
+  has_ub <- length(object@ub) == 1
+  
+  option_1 <- has_mean & has_sterr
+  option_2 <- has_lb & has_ub
+  
+  
+  if (option_1 | option_2) {
+    return(TRUE)
+  } else {
+    stop("needs mean and sterr or lb and ub")
+  }
+  
+})
+
+
+```
+
+#### A show method.
+
+```{r}
+
+setMethod("show", "waldCI",
+  function(object) {
+    cat(paste("The confidence level: ", object@level))
+    cat("\n")
+    cat(paste("The mean: ", object@mean))
+    cat("\n")
+    cat(paste("The standard error: ", object@sterr))
+    cat("\n")
+    cat(paste("The lower bound: ", object@lb))
+    cat("\n")
+    cat(paste("The upper bound: ", object@ub))
+    cat("\n")
+    return(invisible(object))
+  }
+)
+
+```
+
+#### Accessors: lb, ub, mean, sterr, level.
+
+```{r}
+
+# Confidence Level
+
+setGeneric("level",
+           function(x) {
+             standardGeneric("level")
+           })
+
+setMethod("level", "waldCI", function(x) {
+  x@level
+})
+
+
+# Lower Bound
+
+setGeneric("lb",
+           function(x) {
+             standardGeneric("lb")
+           })
+
+setMethod("lb", "waldCI", function(x) {
+  x@lb
+})
+
+# Upper Bound
+
+setGeneric("ub",
+           function(x) {
+             standardGeneric("ub")
+           })
+
+setMethod("ub", "waldCI", function(x) {
+  x@ub
+})
+
+# Mean
+
+setGeneric("mean",
+           function(x) {
+             standardGeneric("mean")
+           })
+
+setMethod("mean", "waldCI", function(x) {
+  x@mean
+})
+
+
+# Standard Error
+
+setGeneric("sterr",
+           function(x) {
+             standardGeneric("sterr")
+           })
+
+setMethod("sterr", "waldCI", function(x) {
+  x@sterr
+})
+
+```
+
+#### Setters: lb, ub, mean, sterr, level.
+
+```{r}
+# Confidence Level
+
+setGeneric("level<-", function(x, value) {
+  standardGeneric("level<-")
+})
+
+setMethod("level<-", "waldCI", function(x, value) {
+  x@level <- value
+  validObject(x)
+  return(x)
+})
+
+# Lower Bound
+
+setGeneric("lb<-", function(x, value) {
+  standardGeneric("lb<-")
+})
+
+setMethod("lb<-", "waldCI", function(x, value) {
+  x@lb <- value
+  validObject(x)
+  return(x)
+})
+
+# Upper Bound
+
+setGeneric("ub<-", function(x, value) {
+  standardGeneric("ub<-")
+})
+
+setMethod("ub<-", "waldCI", function(x, value) {
+  x@ub <- value
+  validObject(x)
+  return(x)
+})
+
+# Mean
+
+setGeneric("mean<-", function(x, value) {
+  standardGeneric("mean<-")
+})
+
+setMethod("mean<-", "waldCI", function(x, value) {
+  x@mean <- value
+  validObject(x)
+  return(x)
+})
+
+# Error
+
+setGeneric("sterr<-", function(x, value) {
+  standardGeneric("sterr<-")
+})
+
+setMethod("sterr<-", "waldCI", function(x, value) {
+  x@sterr <- value
+  validObject(x)
+  return(x)
+})
+
+```
+
+#### A contains method, returning a logical of whether a value is within a CI.
+
+```{r}
+setGeneric("contains",
+           function(object, value) {
+             standardGeneric("contains")
+           })
+
+setMethod("contains", "waldCI",
+  function(object, value) {
+    
+  has_mean <- length(object@mean) == 1
+  has_sterr <- length(object@sterr) == 1
+  has_lb <- length(object@lb) == 1
+  has_ub <- length(object@ub) == 1
+    
+    option_1 <- has_mean & has_sterr
+    option_2 <- has_lb & has_ub
+    
+    if (option_1) {
+      lb <- object@mean - (2 * object@sterr)
+      ub <- object@mean - (2 * object@sterr)
+      return(value > lb & value < ub)
+    } else {
+      return(value > object@lb & value < object@ub)
+    }
+  }
+)
+```
+
+#### An overlap method, that takes in two waldCI’s, and returns a logical of whether the two confidence intervals overlap.
+
+```{r}
+setGeneric("overlap", function(object_one, object_two) {
+  standardGeneric("overlap")
+})
+
+setMethod("overlap",
+          signature = c(object_one = "waldCI", object_two = "waldCI"),
+  function(object_one, object_two) {
+    
+    has_mean <- length(object_one@mean) == 1
+    has_sterr <- length(object_one@sterr) == 1
+    has_lb <- length(object_one@lb) == 1
+    has_ub <- length(object_one@ub) == 1
+    
+    option_1 <- has_mean & has_sterr
+    option_2 <- has_lb & has_ub
+    
+    lb_one <- 0
+    ub_one <- 0
+    
+    if (option_1) {
+      lb_one <- object_one@mean - (2 * object_one@sterr)
+      ub_one <- object_one@mean - (2 * object_one@sterr)
+    } else {
+      lb_one <- object_one@lb
+      ub_one <- object_one@ub
+    }
+    
+    has_mean <- length(object_two@mean) == 1
+    has_sterr <- length(object_two@sterr) == 1
+    has_lb <- length(object_two@lb) == 1
+    has_ub <- length(object_two@ub) == 1
+    
+    option_1 <- has_mean & has_sterr
+    option_2 <- has_lb & has_ub
+    
+    lb_two <- 0
+    ub_two <- 0
+    
+    if (option_1) {
+      lb_two <- object_two@mean - (2 * object_two@sterr)
+      ub_two <- object_two@mean - (2 * object_two@sterr)
+    } else {
+      lb_two <- object_two@lb
+      ub_two <- object_two@ub
+    }
+    
+      overlap <- ((lb_one > lb_two & lb_one < ub_two) | (ub_one > lb_two & ub_one < ub_two) | (lb_two > lb_one & lb_two < ub_one) | (ub_two > lb_one & ub_two < ub_one))
+  
+  return(overlap)
+      
+  })
+  
+
+```
+
+#### as.numeric to return c(lb, ub). (Hint: The second argument of setGeneric is not needed when an existing s3 function uses the .Primitive function.)
+
+```{r}
+setMethod("as.numeric",
+          signature = c(x = "waldCI"),
+  function(x) {
+    return(c(x@lb, x@ub))
+})
+```
+
+#### transformCI which takes in a function and a waldCI, and returns the transformed waldCI object. Warn the user that only monotonic functions make sense.
+
+```{r}
+setGeneric("transformCI", function(object, fn) {
+  standardGeneric("transformCI")
+})
+
+setMethod("transformCI",
+          signature = c(object = "waldCI"),
+  function(object, fn) {
+    
+  has_mean <- length(object@mean) == 1
+  has_sterr <- length(object@sterr) == 1
+  has_lb <- length(object@lb) == 1
+  has_ub <- length(object@ub) == 1
+  
+  option_1 <- has_mean & has_sterr
+  option_2 <- has_lb & has_ub
+  
+  if (option_1) {
+    return(new("waldCI", level = object@level, mean = fn(object@mean), sterr = fn(object@sterr)))
+  } else {
+    return(new("waldCI", level = object@level, lb = fn(object@lb), ub = fn(object@ub)))
+  }
+  
+})
+
+```
+
+### b)
+
+```{r}
+
+ci1 <- new("waldCI", level = .95, lb = 17.2, ub = 24.7)
+ci2 <- new("waldCI", level = .99, mean = 13, sterr = 2.5)
+ci3 <- new("waldCI", level = .75, lb = 27.43, ub = 39.22)
+
+
+ci1
+ci2
+ci3
+as.numeric(ci1)
+as.numeric(ci2)
+as.numeric(ci3)
+lb(ci2)
+ub(ci2)
+mean(ci1)
+sterr(ci3)
+level(ci2)
+lb(ci2) <- 10.5
+mean(ci3) <- 34
+level(ci3) <- .8
+contains(ci1, 17)
+contains(ci3, 44)
+overlap(ci1, ci2)
+eci1 <- transformCI(ci1, sqrt)
+eci1
+mean(transformCI(ci2, log))
+```
+
+### c)
+
+```{r}
+result <- tryCatch(
+  expr = {
+    x <- new("waldCI", confidence_level = 0.9, mean = 2, sterr = -2)
+  },
+  error = function(e) {
+    print(e)
+    print("Validated an error occurred for negative standard error.")
+  }
+)
+
+result <- tryCatch(
+  expr = {
+    x <- new("waldCI", confidence_level = 0.9, lb = 2, ub = 1)
+  },
+  error = function(e) {
+    print(e)
+    print("Validated an error occurred for lb > ub.")
+  }
+)
+
+result <- tryCatch(
+  expr = {
+    x <- new("waldCI", confidence_level = 0.9, lb = 2, ub = Inf)
+  },
+  error = function(e) {
+    print(e)
+    print("Validated an error occurred for Infinite bounds.")
+  }
+)
+
+result <- tryCatch(
+  expr = {
+    x <- new("waldCI", confidence_level = 0.9, lb = 2, ub = 3)
+    ub(x) <- 1
+  },
+  error = function(e) {
+    print(e)
+    print("Validated an error occurred for invalid setter.")
+  }
+)
+
+```
+
+## Problem 2 - data.table
+
+# Use the “ATP Matches” data from 2019.
+
+```{r}
+library(data.table)
+tennis <- fread("tennis-atp-sackmann-data/atp_matches_2019.csv")
+```
+
+### a)
+
+```{r}
+
+print(class(tennis))
+
+# We see that it is a data.table type
+
+print(paste("The 2019 number of tournaments was",
+            length(unique(tennis$tourney_id))))
+
+```
+
+However, there were multiple Davis cup finals.
+```{r}
+
+tourneys <- unique(tennis[, .(tourney_name)])
+
+tourneys[str_detect(tourney_name, "Davis Cup")][1:5]
+```
+
+
+
+```{r}
+nrow(tourneys[, tourney_name := sub("Davis.*", "Davis Cup", tourney_name)][, .N, by = tourney_name][, N := NULL])
+
+```
+
+### b)
+
+```{r}
+tennis <- fread("tennis-atp-sackmann-data/atp_matches_2019.csv")
+
+multiwinners <- tennis[
+  order(tourney_name, -match_num), .SD[1], by = tourney_name
+][
+  , .(wins = .N), by = winner_name
+][
+  wins > 1
+][
+  order(-wins)
+]
+
+nrow(multiwinners)
+```
+There are 17 winners who won multiple tournaments. 
+```{r}
+multiwinners %>%
+  slice(1:2)
+```
+Rafael Nadal won the most, at 9 tournaments.
+
+### c)
+
+```{r}
+library(tidymodels)
+
+tennis %>%
+  select(w_ace, l_ace) %>%
+  mutate(win_more = w_ace > l_ace) %>%
+  prop_test(win_more ~ NULL, p = .5)
+```
+Therefore, yes we have statistical significant evidence that winners perform more aces than losers.
+
+### d)
+
+```{r}
+data_tennis_matches <- fread("tennis-atp-sackmann-data/atp_matches_2019.csv")
+
+data_tennis_matches_winner_count <- data_tennis_matches[, .(wins = .N), by = winner_name]
+data_tennis_matches_loser_count  <- data_tennis_matches[, .(losses = .N), by = loser_name]
+
+tennis_win_lose_count <- merge(
+  data_tennis_matches_winner_count, 
+  data_tennis_matches_loser_count, 
+  by.x = "winner_name", 
+  by.y = "loser_name", 
+  all = TRUE
+)
+
+tennis_win_lose_count <- tennis_win_lose_count[wins + losses >= 5][, ratio := wins / (wins + losses)][order(-ratio)]
+
+print(head(tennis_win_lose_count, 5))
+```
+One player has the highest win-rate, and it is again Rafael Nadal.
+
+## Problem 3 - plotly
+
+```{r}
+data <- read_csv("us-states.csv")
+
+```
+
+# a)
+
+```{r}
+
+data$date <- lubridate::ymd(data$date)
+
+names(data)[names(data) == "date"] <- "Date"
+names(data)[names(data) == "state"] <- "State"
+
+library(ggplot2)
+library(plotly)
+
+g <- ggplot(data, aes(x = Date, y = cases_avg)) +
+  geom_line() +
+  ylab("Daily Cases")
+
+ggplotly(g)
+```
+
+# b)
+
+```{r}
+data_state <- data %>%
+  group_by(State) %>%
+  summarize(total = sum(cases_avg_per_100k)) %>%
+  ungroup()
+
+g <- ggplot(data_state, aes(x = total, y = State, label = State)) +
+  geom_point(aes(color = total == max(total) | total == min(total))) +
+  geom_text(aes(nudge_x = ifelse(total > 37500, -150, 150),
+                hjust = ifelse(total > 37500, 1, 0))) +
+  scale_y_discrete(labels = NULL, breaks = NULL, name = "") +
+  theme(legend.position = "off") +
+  xlab("Total COVID cases 01/2020-03/2023")
+
+ggplotly(g)
+
+```
+
+```{r}
+g <- ggplot(data %>% filter(State == "Maine" | State == "Rhode Island"),
+       aes(x = Date, y = cases_avg_per_100k, color = State)) +
+  geom_line() +
+  ylab("COVID cases per 100k")
+
+ggplotly(g)
+
+```
+
+
+### c) 
+
+```{r}
+data20 <- data %>%
+  filter(year(Date) == 2020) %>%
+  select(State, Date, cases_avg_per_100k)
+
+g <- ggplot(data20, aes(x = Date, y = cases_avg_per_100k, color = State)) +
+  geom_line() +
+  ylab("COVID cases per 100k") +
+  theme(legend.position = "off") # suppress legend for now
+
+ggplotly(g)
+```
+
+```{r}
+data20 <- data20 %>%
+  filter(month(Date) %in% c(3, 4, 5)) # Mar-May
+g <- ggplot(data20, aes(x = Date, y = cases_avg_per_100k, color = State)) +
+  geom_line() +
+  ylab("COVID cases per 100k")
+
+ggplotly(g)
+```
+
+```{r}
+data20 <- data20 %>%
+  filter(month(Date) %in% c(3, 4, 5)) # Mar-May
+
+g <- ggplot(data20, aes(x = Date, y = cases_avg_per_100k, color = State)) +
+  geom_line() +
+  ylab("COVID cases per 100k")
+
+ggplotly(g)
+```
+
+
+```{r}
+g <- ggplot(data20 %>% filter(cases_avg_per_100k > 20),
+       aes(x = Date, y = cases_avg_per_100k, color = State)) +
+  ylab("COVID cases per 100k") +
+  geom_line()
+
+ggplotly(g)
+
+```
